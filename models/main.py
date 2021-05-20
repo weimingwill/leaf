@@ -21,6 +21,10 @@ from utils.model_utils import read_data
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 
+
+accuracy = []
+
+
 def main():
     args = parse_args()
     print(args)
@@ -104,6 +108,7 @@ def main():
     server.close_model()
     print("Total training time {}".format(time.time() - start_time))
 
+
 def online(clients):
     """We assume all users are always online."""
     return clients
@@ -180,6 +185,7 @@ def print_metrics(metrics, weights, prefix=''):
     ordered_weights = [weights[c] for c in sorted(weights)]
     metric_names = metrics_writer.get_metrics_names(metrics)
     to_ret = None
+    global accuracy
     for metric in metric_names:
         ordered_metric = [metrics[c][metric] for c in sorted(metrics)]
         print('%s: %g, 10th percentile: %g, 50th percentile: %g, 90th percentile %g' \
@@ -188,6 +194,10 @@ def print_metrics(metrics, weights, prefix=''):
                  np.percentile(ordered_metric, 10),
                  np.percentile(ordered_metric, 50),
                  np.percentile(ordered_metric, 90)))
+
+        if metric == "test_accuracy":
+            accuracy.append(np.average(ordered_metric, weights=ordered_weights))
+    print("cumulative accuracies: ", accuracy)
 
 
 if __name__ == '__main__':
