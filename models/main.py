@@ -4,6 +4,7 @@ import importlib
 import numpy as np
 import os
 import sys
+import time
 import random
 import tensorflow as tf
 
@@ -21,8 +22,10 @@ STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 
 def main():
-
     args = parse_args()
+    print(args)
+
+    start_time = time.time()
 
     # Set the random seed if provided (affects client sampling, and batching)
     random.seed(1 + args.seed)
@@ -61,7 +64,7 @@ def main():
     server = Server(client_model)
 
     # Create clients
-    clients = setup_clients(args.dataset, client_model, args.use_val_set)
+    clients = setup_clients(args.data_dir, args.dataset, client_model, args.use_val_set)
     client_ids, client_groups, client_num_samples = server.get_clients_info(clients)
     print('Clients in Total: %d' % len(clients))
 
@@ -99,6 +102,7 @@ def main():
 
     # Close models
     server.close_model()
+    print("Total training time {}".format(time.time() - start_time))
 
 def online(clients):
     """We assume all users are always online."""
@@ -112,15 +116,19 @@ def create_clients(users, groups, train_data, test_data, model):
     return clients
 
 
-def setup_clients(dataset, model=None, use_val_set=False):
+def setup_clients(data_dir, dataset, model=None, use_val_set=False):
     """Instantiates clients based on given train and test data directories.
 
     Return:
         all_clients: list of Client objects.
     """
-    eval_set = 'test' if not use_val_set else 'val'
-    train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
-    test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    if data_dir == "":
+        eval_set = 'test' if not use_val_set else 'val'
+        train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
+        test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    else:
+        train_data_dir = os.path.join(data_dir, "train")
+        test_data_dir = os.path.join(data_dir, "test")
 
     users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
