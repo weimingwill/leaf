@@ -4,8 +4,11 @@ import importlib
 import numpy as np
 import os
 import sys
+import time
 import random
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 import metrics.writer as metrics_writer
 
@@ -20,14 +23,23 @@ from utils.model_utils import read_data
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 
-def main():
 
+accuracy = []
+
+
+def main():
     args = parse_args()
+    print(args)
+
+    print("gpus:", tf.config.list_physical_devices('GPU'))
+
+    cumulative_times = []
+    start_time = time.time()
 
     # Set the random seed if provided (affects client sampling, and batching)
-    random.seed(1 + args.seed)
-    np.random.seed(12 + args.seed)
-    tf.set_random_seed(123 + args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    tf.set_random_seed(args.seed)
 
     model_path = '%s/%s.py' % (args.dataset, args.model)
     if not os.path.exists(model_path):
@@ -61,7 +73,7 @@ def main():
     server = Server(client_model)
 
     # Create clients
-    clients = setup_clients(args.dataset, client_model, args.use_val_set)
+    clients = setup_clients(args.data_dir, args.dataset, client_model, args.use_val_set)
     client_ids, client_groups, client_num_samples = server.get_clients_info(clients)
     print('Clients in Total: %d' % len(clients))
 
@@ -70,6 +82,7 @@ def main():
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
     sys_writer_fn = get_sys_writer_function(args)
     print_stats(0, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
+    cumulative_times.append(time.time() - start_time)  # to match the array size the accuracies
 
     # Simulate training
     for i in range(num_rounds):
@@ -89,6 +102,7 @@ def main():
         # Test model
         if (i + 1) % eval_every == 0 or (i + 1) == num_rounds:
             print_stats(i + 1, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
+            cumulative_times.append(time.time() - start_time)
     
     # Save server model
     ckpt_path = os.path.join('checkpoints', args.dataset)
@@ -99,6 +113,11 @@ def main():
 
     # Close models
     server.close_model()
+    global accuracy
+    print("Cumulative accuracies: {}".format(accuracy))
+    print("Cumulative training times: {}".format(cumulative_times))
+    print("Total training time: {}".format(time.time() - start_time))
+
 
 def online(clients):
     """We assume all users are always online."""
@@ -112,15 +131,19 @@ def create_clients(users, groups, train_data, test_data, model):
     return clients
 
 
-def setup_clients(dataset, model=None, use_val_set=False):
+def setup_clients(data_dir, dataset, model=None, use_val_set=False):
     """Instantiates clients based on given train and test data directories.
 
     Return:
         all_clients: list of Client objects.
     """
-    eval_set = 'test' if not use_val_set else 'val'
-    train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
-    test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    if data_dir == "":
+        eval_set = 'test' if not use_val_set else 'val'
+        train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
+        test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    else:
+        train_data_dir = os.path.join(data_dir, "train")
+        test_data_dir = os.path.join(data_dir, "test")
 
     users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
@@ -150,9 +173,9 @@ def get_sys_writer_function(args):
 def print_stats(
     num_round, server, clients, num_samples, args, writer, use_val_set):
     
-    train_stat_metrics = server.test_model(clients, set_to_use='train')
-    print_metrics(train_stat_metrics, num_samples, prefix='train_')
-    writer(num_round, train_stat_metrics, 'train')
+    # train_stat_metrics = server.test_model(clients, set_to_use='train')
+    # print_metrics(train_stat_metrics, num_samples, prefix='train_')
+    # writer(num_round, train_stat_metrics, 'train')
 
     eval_set = 'test' if not use_val_set else 'val'
     test_stat_metrics = server.test_model(clients, set_to_use=eval_set)
@@ -172,6 +195,7 @@ def print_metrics(metrics, weights, prefix=''):
     ordered_weights = [weights[c] for c in sorted(weights)]
     metric_names = metrics_writer.get_metrics_names(metrics)
     to_ret = None
+    global accuracy
     for metric in metric_names:
         ordered_metric = [metrics[c][metric] for c in sorted(metrics)]
         print('%s: %g, 10th percentile: %g, 50th percentile: %g, 90th percentile %g' \
@@ -180,6 +204,8 @@ def print_metrics(metrics, weights, prefix=''):
                  np.percentile(ordered_metric, 10),
                  np.percentile(ordered_metric, 50),
                  np.percentile(ordered_metric, 90)))
+        if prefix + metric == "test_accuracy":
+            accuracy.append(np.average(ordered_metric, weights=ordered_weights) * 100.0)
 
 
 if __name__ == '__main__':
