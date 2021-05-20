@@ -108,6 +108,8 @@ def main():
 
     # Close models
     server.close_model()
+    global accuracy
+    print("Cumulative accuracies: {}".format(accuracy))
     print("Cumulative training times: {}".format(cumulative_times))
     print("Total training time: {}".format(time.time() - start_time))
 
@@ -199,7 +201,6 @@ def print_metrics(metrics, weights, prefix=''):
                  np.percentile(ordered_metric, 90)))
         if prefix + metric == "test_accuracy":
             accuracy.append(np.average(ordered_metric, weights=ordered_weights))
-            print("cumulative accuracies: ", accuracy)
 
 
 if __name__ == '__main__':
