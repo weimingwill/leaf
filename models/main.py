@@ -194,10 +194,9 @@ def print_metrics(metrics, weights, prefix=''):
                  np.percentile(ordered_metric, 10),
                  np.percentile(ordered_metric, 50),
                  np.percentile(ordered_metric, 90)))
-
-        if metric == "test_accuracy":
+        if prefix + metric == "test_accuracy":
             accuracy.append(np.average(ordered_metric, weights=ordered_weights))
-    print("cumulative accuracies: ", accuracy)
+            print("cumulative accuracies: ", accuracy)
 
 
 if __name__ == '__main__':
