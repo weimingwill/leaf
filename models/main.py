@@ -28,7 +28,7 @@ accuracy = []
 def main():
     args = parse_args()
     print(args)
-
+    cumulative_times = []
     start_time = time.time()
 
     # Set the random seed if provided (affects client sampling, and batching)
@@ -77,6 +77,7 @@ def main():
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
     sys_writer_fn = get_sys_writer_function(args)
     print_stats(0, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
+    cumulative_times.append(time.time() - start_time)  # to match the array size the accuracies
 
     # Simulate training
     for i in range(num_rounds):
@@ -96,6 +97,7 @@ def main():
         # Test model
         if (i + 1) % eval_every == 0 or (i + 1) == num_rounds:
             print_stats(i + 1, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
+            cumulative_times.append(time.time() - start_time)
     
     # Save server model
     ckpt_path = os.path.join('checkpoints', args.dataset)
@@ -106,7 +108,8 @@ def main():
 
     # Close models
     server.close_model()
-    print("Total training time {}".format(time.time() - start_time))
+    print("Cumulative training times: {}".format(cumulative_times))
+    print("Total training time: {}".format(time.time() - start_time))
 
 
 def online(clients):
