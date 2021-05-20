@@ -3,7 +3,7 @@
 mkdir -p log
 now=$(date +"%Y%m%d_%H%M%S")
 
-data_dir=/mnt/lustre/$(whoami)/projects/easyfl/datasets/data
+data_dir=/mnt/lustre/$(whoami)/projects/easyfl/easyfl/datasets/data
 root_dir=/mnt/lustre/$(whoami)/projects/leaf
 
 export PYTHONPATH=$PYTHONPATH:${root_dir}
