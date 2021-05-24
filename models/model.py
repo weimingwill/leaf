@@ -22,7 +22,7 @@ class Model(ABC):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            tf.set_random_seed(123 + self.seed)
+            tf.set_random_seed(self.seed)
             self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
             self.saver = tf.train.Saver()
         tfconfig = tf.ConfigProto()
@@ -56,8 +56,8 @@ class Model(ABC):
     def optimizer(self):
         """Optimizer to be used by the model."""
         if self._optimizer is None:
-            self._optimizer = tf.train.MomentumOptimizer(learning_rate=self.lr, momentum=0.9)
-            # self._optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
+            self._optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
+            # self._optimizer = tf.keras.optimizers.SGD(learning_rate=self.lr, momentum=0.9)
 
         return self._optimizer
 
