@@ -31,8 +31,6 @@ def main():
     args = parse_args()
     print(args)
 
-    print("gpus:", tf.config.list_physical_devices('GPU'))
-
     cumulative_times = []
     start_time = time.time()
 
