@@ -53,7 +53,10 @@ def parse_args():
     parser.add_argument('--use-val-set',
                         help='use validation set;',
                         action='store_true')
-
+    parser.add_argument('--test-all',
+                        help='whether test all clients;',
+                        action='store_true',
+                        default=False)
     # Minibatch doesn't support num_epochs, so make them mutually exclusive
     epoch_capability_group = parser.add_mutually_exclusive_group()
     epoch_capability_group.add_argument('--minibatch',
