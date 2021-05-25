@@ -101,7 +101,12 @@ def main():
 
         # Test model
         if (i + 1) % eval_every == 0 or (i + 1) == num_rounds:
-            print_stats(i + 1, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
+            clients_to_test = server.selected_clients
+            num_samples = c_num_samples
+            if args.test_all:
+                clients_to_test = clients
+                num_samples = client_num_samples
+            print_stats(i + 1, server, clients_to_test, num_samples, args, stat_writer_fn, args.use_val_set)
             cumulative_times.append(time.time() - start_time)
     
     # Save server model
@@ -180,7 +185,7 @@ def print_stats(
     eval_set = 'test' if not use_val_set else 'val'
     test_stat_metrics = server.test_model(clients, set_to_use=eval_set)
     print_metrics(test_stat_metrics, num_samples, prefix='{}_'.format(eval_set))
-    writer(num_round, test_stat_metrics, eval_set)
+    # writer(num_round, test_stat_metrics, eval_set)
 
 
 def print_metrics(metrics, weights, prefix=''):
