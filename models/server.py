@@ -26,9 +26,6 @@ class Server:
         np.random.seed(my_round)
         self.selected_clients = np.random.choice(possible_clients, num_clients, replace=False)
 
-        client_ids = [c.id for c in self.selected_clients]
-        print("Round {} selected clients: {}".format(my_round, client_ids))
-
         return [(c.num_train_samples, c.num_test_samples) for c in self.selected_clients]
 
     def train_model(self, num_epochs=1, batch_size=10, minibatch=None, clients=None):
@@ -100,7 +97,7 @@ class Server:
             client.model.set_params(self.model)
             c_metrics = client.test(set_to_use)
             metrics[client.id] = c_metrics
-        
+
         return metrics
 
     def get_clients_info(self, clients):
