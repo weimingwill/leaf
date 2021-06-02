@@ -15,6 +15,7 @@ class ClientModel(Model):
 
     def create_model(self):
         """Model function for CNN."""
+        init_range = 0.1
         features = tf.placeholder(
             tf.float32, shape=[None, IMAGE_SIZE * IMAGE_SIZE], name='features')
         labels = tf.placeholder(tf.int64, shape=[None], name='labels')
@@ -24,18 +25,27 @@ class ClientModel(Model):
           filters=32,
           kernel_size=[5, 5],
           padding="same",
-          activation=tf.nn.relu)
+          activation=tf.nn.relu,
+          kernel_initializer=tf.random_uniform_initializer(-init_range, init_range),
+          bias_initializer=tf.zeros_initializer())
         pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
         conv2 = tf.layers.conv2d(
             inputs=pool1,
             filters=64,
             kernel_size=[5, 5],
             padding="same",
-            activation=tf.nn.relu)
+            activation=tf.nn.relu,
+            kernel_initializer=tf.random_uniform_initializer(-init_range, init_range),
+            bias_initializer=tf.zeros_initializer()
+        )
         pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
         pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
-        dense = tf.layers.dense(inputs=pool2_flat, units=2048, activation=tf.nn.relu)
-        logits = tf.layers.dense(inputs=dense, units=self.num_classes)
+        dense = tf.layers.dense(inputs=pool2_flat, units=2048, activation=tf.nn.relu,
+                                kernel_initializer=tf.random_uniform_initializer(-init_range, init_range),
+                                bias_initializer=tf.zeros_initializer())
+        logits = tf.layers.dense(inputs=dense, units=self.num_classes,
+                                 kernel_initializer=tf.random_uniform_initializer(-init_range, init_range),
+                                 bias_initializer=tf.zeros_initializer())
         predictions = {
           "classes": tf.argmax(input=logits, axis=1),
           "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
