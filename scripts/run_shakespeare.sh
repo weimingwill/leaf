@@ -8,8 +8,6 @@ root_dir=/mnt/lustre/$(whoami)/projects/leaf
 
 export PYTHONPATH=$PYTHONPATH:${root_dir}
 
-srun -u --partition=innova --job-name=leaf-shakespeare \
-    -n1 --gres=gpu:1 --ntasks-per-node=1 \
-    python ${root_dir}/models/main.py --dataset shakespeare --model stacked_lstm --eval-every 1 \
-    --data_dir ${data_dir}/shakespeare/shakespeare_iid_100_10_1_0.05_0.1_sample_0.9/ \
-    --clients-per-round 10 --num-rounds 150 --batch-size 64 --num-epochs 5 --lr 0.01 | tee log/leaf-shakespeare-${now}.log &
+python -u ${root_dir}/models/main.py --dataset shakespeare --model stacked_lstm --eval-every 1 \
+    --data_dir ${data_dir}/shakespeare/shakespeare_iid_10_10_1_0.2_0.2_sample_0.9/ \
+    --clients-per-round 10 --num-rounds 100 --batch-size 64 --num-epochs 10 --lr 0.8 | tee log/leaf-shakespear-${now}.log &
