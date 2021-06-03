@@ -21,6 +21,7 @@ class ClientModel(Model):
         super(ClientModel, self).__init__(seed, lr)
 
     def create_model(self):
+        init_range = 0.1
         features = tf.placeholder(tf.int32, [None, self.seq_len])
         embedding = tf.get_variable("embedding", [self.num_classes, 8])
         x = tf.nn.embedding_lookup(embedding, features)
@@ -34,7 +35,10 @@ class ClientModel(Model):
             stacked_lstm = rnn.MultiRNNCell(
                 [rnn.LSTMCell(self.n_hidden, initializer=initializer) for _ in range(2)])
         outputs, _ = tf.nn.dynamic_rnn(stacked_lstm, x, dtype=tf.float32)
-        pred = tf.layers.dense(inputs=outputs[:,-1,:], units=self.num_classes)
+        pred = tf.layers.dense(inputs=outputs[:,-1,:],
+                               units=self.num_classes,
+                               kernel_initializer=tf.random_uniform_initializer(-init_range, init_range),
+                               bias_initializer=tf.zeros_initializer())
         
         loss = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits_v2(logits=pred, labels=labels))
