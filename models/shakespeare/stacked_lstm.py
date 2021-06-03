@@ -31,9 +31,7 @@ class ClientModel(Model):
             stacked_lstm = rnn.MultiRNNCell(
                 [rnn.BasicLSTMCell(self.n_hidden) for _ in range(2)])
         else:
-            initializer = tf.random_uniform_initializer(-1.0, 1.0)
-            stacked_lstm = rnn.MultiRNNCell(
-                [rnn.LSTMCell(self.n_hidden, initializer=initializer) for _ in range(2)])
+            stacked_lstm = rnn.MultiRNNCell([rnn.LSTMCell(self.n_hidden) for _ in range(2)])
         outputs, _ = tf.nn.dynamic_rnn(stacked_lstm, x, dtype=tf.float32)
         pred = tf.layers.dense(inputs=outputs[:,-1,:],
                                units=self.num_classes,
