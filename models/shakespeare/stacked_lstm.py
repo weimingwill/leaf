@@ -4,7 +4,11 @@ import sys
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-from tensorflow.contrib import rnn
+is_v1 = True if tf.__version__.startswith('1') else False
+if is_v1:
+    from tensorflow.contrib import rnn
+else:
+    from tensorflow.compat.v1.nn import rnn_cell as rnn
 
 from model import Model
 from utils.language_utils import letter_to_vec, word_to_indices
@@ -21,9 +25,14 @@ class ClientModel(Model):
         embedding = tf.get_variable("embedding", [self.num_classes, 8])
         x = tf.nn.embedding_lookup(embedding, features)
         labels = tf.placeholder(tf.int32, [None, self.num_classes])
-        
-        stacked_lstm = rnn.MultiRNNCell(
-            [rnn.BasicLSTMCell(self.n_hidden) for _ in range(2)])
+
+        if is_v1:
+            stacked_lstm = rnn.MultiRNNCell(
+                [rnn.BasicLSTMCell(self.n_hidden) for _ in range(2)])
+        else:
+            initializer = tf.random_uniform_initializer(-1.0, 1.0)
+            stacked_lstm = rnn.MultiRNNCell(
+                [rnn.LSTMCell(self.n_hidden, initializer=initializer) for _ in range(2)])
         outputs, _ = tf.nn.dynamic_rnn(stacked_lstm, x, dtype=tf.float32)
         pred = tf.layers.dense(inputs=outputs[:,-1,:], units=self.num_classes)
         
