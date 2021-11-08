@@ -32,7 +32,6 @@ def main():
     print(args)
 
     cumulative_times = []
-    start_time = time.time()
 
     # Set the random seed if provided (affects client sampling, and batching)
     random.seed(args.seed)
@@ -77,6 +76,7 @@ def main():
 
     # Initial status
     print('--- Random Initialization ---')
+    start_time = time.time()
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
     sys_writer_fn = get_sys_writer_function(args)
     print_stats(0, server, clients, client_num_samples, args, stat_writer_fn, args.use_val_set)
