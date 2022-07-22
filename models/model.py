@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 import os
 import sys
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from baseline_constants import ACCURACY_KEY
 
@@ -21,10 +22,13 @@ class Model(ABC):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            tf.set_random_seed(123 + self.seed)
+            tf.set_random_seed(self.seed)
             self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
             self.saver = tf.train.Saver()
-        self.sess = tf.Session(graph=self.graph)
+        tfconfig = tf.ConfigProto()
+        tfconfig.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
+        tfconfig.log_device_placement = False  # to log device placement (on which device the operation ran)
+        self.sess = tf.Session(graph=self.graph, config=tfconfig)
 
         self.size = graph_size(self.graph)
 
@@ -52,7 +56,9 @@ class Model(ABC):
     def optimizer(self):
         """Optimizer to be used by the model."""
         if self._optimizer is None:
-            self._optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
+            # self._optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
+            self._optimizer = tf.train.MomentumOptimizer(learning_rate=self.lr, momentum=0.9)
+            # self._optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
 
         return self._optimizer
 

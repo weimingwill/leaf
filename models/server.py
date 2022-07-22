@@ -97,7 +97,7 @@ class Server:
             client.model.set_params(self.model)
             c_metrics = client.test(set_to_use)
             metrics[client.id] = c_metrics
-        
+
         return metrics
 
     def get_clients_info(self, clients):
