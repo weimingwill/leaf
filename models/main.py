@@ -3,6 +3,7 @@ import argparse
 import importlib
 import numpy as np
 import os
+import re
 import sys
 import time
 import random
@@ -16,6 +17,7 @@ from baseline_constants import MAIN_PARAMS, MODEL_PARAMS
 from client import Client
 from server import Server
 from model import ServerModel
+from gpustat import GPUStat
 
 from utils.args import parse_args
 from utils.model_utils import read_data
@@ -28,6 +30,11 @@ accuracy = []
 
 
 def main():
+    rank, local_rank, world_size, host_addr = setup()
+    if local_rank != 0:
+        return
+    print("host addr:", host_addr)
+
     args = parse_args()
     print(args)
 
@@ -211,5 +218,32 @@ def print_metrics(metrics, weights, prefix=''):
             accuracy.append(np.average(ordered_metric, weights=ordered_weights) * 100.0)
 
 
+def setup(port=23344):
+    try:
+        rank = int(os.environ['SLURM_PROCID'])
+        local_rank = int(os.environ['SLURM_LOCALID'])
+        world_size = int(os.environ['SLURM_NTASKS'])
+        host = get_ip(os.environ['SLURM_STEP_NODELIST'])
+        host_addr = 'tcp://' + host + ':' + str(port)
+    except KeyError:
+        return 0, 0, 0, ""
+    return rank, local_rank, world_size, host_addr
+
+
+def get_ip(node_list):
+    if "[" not in node_list:
+        return node_list
+    r = re.search(r'([\w-]*)\[(\d*)[-+,+\d]*\]', node_list)
+    if not r:
+        return
+    base, node = r.groups()
+    return base + node
+
+
 if __name__ == '__main__':
+    gpustat = GPUStat()
+    gpustat.open(1)
     main()
+    gpustat.all_stat()
+    gpustat.summary()
+    gpustat.close()
